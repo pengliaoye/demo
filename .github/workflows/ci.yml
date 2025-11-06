@@ -25,7 +25,7 @@ jobs:
       - name: Create Dockerfile
         run: |
           cat <<EOF > Dockerfile
-          FROM openjdk:21
+          FROM eclipse-temurin:21
           COPY target/*.jar app.jar
           CMD ["java", "-jar", "/app.jar"]
           EOF
