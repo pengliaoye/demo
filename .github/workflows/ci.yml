@@ -1,0 +1,45 @@
+name: Build and Push
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+      - name: Build with Maven
+        run: mvn -B -DskipTests package --file pom.xml
+      - name: Create Dockerfile
+        run: |
+          cat <<EOF > Dockerfile
+          FROM openjdk:21
+          COPY target/*.jar app.jar
+          CMD ["java", "-jar", "/app.jar"]
+          EOF
+      - name: Log in to ghcr
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/pengliaoye/demo:latest
+#      - name: Build with Maven
+#        run: mvn -B spring-boot:build-image -DskipTests -Ddocker.publishRegistry.url=ghcr.io -Ddocker.publishRegistry.username=${{ github.actor }} -Ddocker.publishRegistry.password=${{ secrets.GITHUB_TOKEN }} -Dspring-boot.build-image.publish=true -Dspring-boot.build-image.imageName=ghcr.io/pengliaoye/moon:latest --file pom.xml
